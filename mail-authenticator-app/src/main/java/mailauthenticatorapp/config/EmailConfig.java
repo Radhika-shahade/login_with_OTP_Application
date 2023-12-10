@@ -10,15 +10,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Properties;
 
+
 @Configuration
 public class EmailConfig {
-    @Value("${spring.mail.host}")
+    @Value("${mail.host}")
     private String mailHost;
-    @Value("${spring.mail.port}")
+    @Value("${mail.port}")
     private String mailPort;
-    @Value("${spring.mail.username}")
+    @Value("${mail.username}")
     private String mailUsername;
-    @Value("${spring.mail.password}")
+    @Value("${mail.password}")
     private String mailPassword;
 
     @Bean
