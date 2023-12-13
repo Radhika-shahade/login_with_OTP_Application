@@ -9,6 +9,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+
 @Component
 public class EmailUtil {
     @Autowired
@@ -19,15 +21,17 @@ public class EmailUtil {
 //        simpleMailMessage.setSubject("verify OTP");
 //        simpleMailMessage.setText("Hello, your OTP is "+ otp);
         MimeMessage mimeMessage= javaMailSender.createMimeMessage();
-        MimeMessageHelper mimeMessageHelper= new MimeMessageHelper(mimeMessage);
+        System.out.println(mimeMessage);
+        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, false, StandardCharsets.UTF_8.name());
         mimeMessageHelper.setTo(email);
         mimeMessageHelper.setSubject("verify OTP");
         mimeMessageHelper.setText("""
                 <div>
-                <a href="http://locahost:8080/verify-account?email=%s&otp=%s> target="_blank"> click link to verify</a>
+                <a href="http://localhost:8082/verify-account?email=%s&otp=%s> target="_blank"> click link to verify</a>
                 </div>
                 """.formatted(email,otp), true);
         javaMailSender.send(mimeMessage);
 
     }
+
 }

@@ -23,7 +23,7 @@ public class EmailConfig {
     private String mailPassword;
 
     @Bean
-    public JavaMailSender getJavaMailSender() {
+    public JavaMailSender javaMailSender() {
         JavaMailSenderImpl javaMailSender = new JavaMailSenderImpl();
         javaMailSender.setHost(mailHost);
         javaMailSender.setPort(Integer.parseInt(mailPort));

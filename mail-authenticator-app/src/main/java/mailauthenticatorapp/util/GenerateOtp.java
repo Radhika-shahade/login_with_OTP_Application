@@ -12,6 +12,6 @@ public class GenerateOtp {
         while(output.length()<6){
             output= "0"+output;
         }
-return output;
+     return output;
     }
 }
