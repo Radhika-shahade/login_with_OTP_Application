@@ -1,15 +1,13 @@
 package mailauthenticatorapp.service;
 
-import jakarta.mail.MessagingException;
 import mailauthenticatorapp.dto.LoginDTO;
-import mailauthenticatorapp.dto.RegisterDTO;
+import mailauthenticatorapp.dto.SignupDTO;
 import mailauthenticatorapp.dto.UserResponse;
 import mailauthenticatorapp.entity.User;
 import mailauthenticatorapp.repository.UserRepository;
 import mailauthenticatorapp.util.EmailUtil;
 import mailauthenticatorapp.util.GenerateOtp;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -25,15 +23,15 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    public UserResponse register(RegisterDTO registerDto) {
+    public UserResponse signup(SignupDTO signupDTO) {
         try {
 
             User user = new User();
-            user.setName(registerDto.getUsername());
-            user.setEmail(registerDto.getEmail());
-            user.setPassword(registerDto.getPassword());
+            user.setName(signupDTO.getUsername());
+            user.setEmail(signupDTO.getEmail());
+            user.setPassword(signupDTO.getPassword());
             setOtp(user);
-            emailUtil.sendOtpOnEmail(registerDto.getEmail(), user.getOtp());
+            emailUtil.sendOtpOnEmail(signupDTO.getEmail(), user.getOtp());
             userRepository.save(user);
             return UserResponse.builder().message("user registration is successful").build();
         } catch (Exception e) {
@@ -45,32 +43,38 @@ public class UserService {
         try {
             User user = userRepository.findByEmail(email).
                     orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
-            if (isUserValid(user, otp)) {
+           if (isUserValid(user, otp)) {
                 user.setActive(true);
                 userRepository.save(user);
+                return UserResponse.builder().message("OTP Verified").build();
             }
-            return UserResponse.builder().message("OTP Verified and Login Successfully").build();
+
+              return  UserResponse.builder().message("Invalid OTP !").build();
+           
         } catch (Exception e) {
-            return UserResponse.builder().message("OTP Expired! Please generate OTP again!").build();
+            return UserResponse.builder().message("Oops! something went wrong, please try again!").build();
 
         }
     }
-
+//To check weather  user OTP is valid or not
     private boolean isUserValid(User user, String otp) {
         return user.getOtp().equals(otp) && checkValidity(user.getOtpGeneratedTime());
     }
+//   To check weather  user Password is valid or not
     private boolean isValidPassword(User user, LoginDTO loginDTO) {
         return loginDTO.getPassword().equals(user.getPassword());
     }
+
+//    To check user is verified or not
     private boolean isUserVerified(User user)
     {
         return user.isActive();
     }
-
+//To check Validity
     private boolean checkValidity(LocalDateTime otpGeneratedTime) {
         return Duration.between(otpGeneratedTime, LocalDateTime.now()).getSeconds() < (2 * MINUTE);
     }
-
+//    To regenerate OTP
     public UserResponse generateOTP(String email) {
         try {
             User user = userRepository.findByEmail(email).
@@ -93,10 +97,7 @@ public class UserService {
     public UserResponse login(LoginDTO loginDTO) {
         try {
             User user = userRepository.findByEmail(loginDTO.getEmail()).
-                    orElseThrow(() -> new RuntimeException("User not found with this email: " + loginDTO.getEmail()));
-
-//        if(loginDTO.isLoginWithOTP()){
-//            generateOTP(loginDTO.getEmail());
+            orElseThrow(() -> new RuntimeException("User not found with this email: " + loginDTO.getEmail()));
             if (!isValidPassword(user, loginDTO)) {
                 return UserResponse.builder().message("password is incorrect").build();
             } else if (!isUserVerified(user)) {
