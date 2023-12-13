@@ -2,12 +2,14 @@ package mailauthenticatorapp.service;
 
 import jakarta.mail.MessagingException;
 import mailauthenticatorapp.dto.LoginDTO;
-import mailauthenticatorapp.dto.RegisterDto;
-import mailauthenticatorapp.entity.AppUser;
+import mailauthenticatorapp.dto.RegisterDTO;
+import mailauthenticatorapp.dto.UserResponse;
+import mailauthenticatorapp.entity.User;
 import mailauthenticatorapp.repository.UserRepository;
 import mailauthenticatorapp.util.EmailUtil;
 import mailauthenticatorapp.util.GenerateOtp;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 
 @Service
 public class UserService {
+    private final int MINUTE = 60 * 1000;
     @Autowired
     private GenerateOtp generateOtp;
     @Autowired
@@ -22,61 +25,86 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    public String register(RegisterDto registerDto) {
-        String otp = generateOtp.generateOtp();
+    public UserResponse register(RegisterDTO registerDto) {
         try {
-            emailUtil.sendOtpOnEmail(registerDto.getEmail(), otp);
 
-        } catch (MessagingException e) {
-            throw new RuntimeException("unable to send otp please try again");
-        }
-        AppUser user = new AppUser();
-        user.setName(registerDto.getName());
-        user.setEmail(registerDto.getEmail());
-        user.setPassword(registerDto.getPassword());
-        user.setOtp(otp);
-        user.setOtpGeneratedTime(LocalDateTime.now());
-        userRepository.save(user);
-        return "user registration is successful";
-    }
-
-    public String verifyAccount(String email, String otp) {
-        AppUser user = userRepository.findByEmail(email).
-                orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
-        if (user.getOtp().equals(otp) && Duration.between(user.getOtpGeneratedTime(), LocalDateTime.now()).getSeconds() < (2 * 60)) {
-            user.setActive(true);
+            User user = new User();
+            user.setName(registerDto.getUsername());
+            user.setEmail(registerDto.getEmail());
+            user.setPassword(registerDto.getPassword());
+            setOtp(user);
+            emailUtil.sendOtpOnEmail(registerDto.getEmail(), user.getOtp());
             userRepository.save(user);
-            return "otp verified ou can login";
+            return UserResponse.builder().message("user registration is successful").build();
+        } catch (Exception e) {
+            return UserResponse.builder().message("Oops! something went wrong, please try again!").build();
         }
-        return "please regenerate otp ";
     }
 
-    public String regenerateOTP(String email) {
-        AppUser user = userRepository.findByEmail(email).
-                orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
-        String otp = generateOtp.generateOtp();
+    public UserResponse verifyAccount(String email, String otp) {
         try {
-            emailUtil.sendOtpOnEmail(email, otp);
-        } catch (MessagingException e) {
-            throw new RuntimeException("unable to send otp please try again ");
+            User user = userRepository.findByEmail(email).
+                    orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
+            if (isUserValid(user, otp)) {
+                user.setActive(true);
+                userRepository.save(user);
+            }
+            return UserResponse.builder().message("OTP Verified and Login Successfully").build();
+        } catch (Exception e) {
+            return UserResponse.builder().message("OTP Expired! Please generate OTP again!").build();
+
         }
+    }
+
+    private boolean isUserValid(User user, String otp) {
+        return user.getOtp().equals(otp) && checkValidity(user.getOtpGeneratedTime());
+    }
+    private boolean isValidPassword(User user, LoginDTO loginDTO) {
+        return loginDTO.getPassword().equals(user.getPassword());
+    }
+    private boolean isUserVerified(User user)
+    {
+        return user.isActive();
+    }
+
+    private boolean checkValidity(LocalDateTime otpGeneratedTime) {
+        return Duration.between(otpGeneratedTime, LocalDateTime.now()).getSeconds() < (2 * MINUTE);
+    }
+
+    public UserResponse generateOTP(String email) {
+        try {
+            User user = userRepository.findByEmail(email).
+                    orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
+            setOtp(user);
+            emailUtil.sendOtpOnEmail(email, user.getOtp());
+            userRepository.save(user);
+            return UserResponse.builder().message("OTP Verification Link has been sent to given email id!").build();
+        } catch (Exception e) {
+            return UserResponse.builder().message("Oops! something went wrong!").build();
+        }
+    }
+
+    private void setOtp(User user) {
+        String otp = generateOtp.generateOtp();
         user.setOtp(otp);
         user.setOtpGeneratedTime(LocalDateTime.now());
-        userRepository.save(user);
-        return "email send....please verify account within 2 minute";
     }
 
-    public String login(LoginDTO loginDTO) {
-        AppUser user = userRepository.findByEmail(loginDTO.getEmail()).
-                orElseThrow(() -> new RuntimeException("User not found with this email: " + loginDTO.getEmail()));
-    if(!loginDTO.getPassword().equals(user.getPassword()))
-        {
-            return "password is incorrect";
+    public UserResponse login(LoginDTO loginDTO) {
+        try {
+            User user = userRepository.findByEmail(loginDTO.getEmail()).
+                    orElseThrow(() -> new RuntimeException("User not found with this email: " + loginDTO.getEmail()));
+
+//        if(loginDTO.isLoginWithOTP()){
+//            generateOTP(loginDTO.getEmail());
+            if (!isValidPassword(user, loginDTO)) {
+                return UserResponse.builder().message("password is incorrect").build();
+            } else if (!isUserVerified(user)) {
+                return UserResponse.builder().message("your account is not verified").build();
+            }
+            return UserResponse.builder().message("Login Successfully").build();
+        } catch (Exception e) {
+            return UserResponse.builder().message("Oops! something went wrong!").build();
         }
-        else if(!user.isActive())
-        {
-            return "your account is not verified";
-        }
-        return "Login successfully";
     }
 }
