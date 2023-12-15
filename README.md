@@ -100,7 +100,7 @@ Request Body:
 "password": "secure_password"
 }
 ```
-### Step 6: Database
+### Step 5: Database
 The Mail Authentication Application utilizes a PostgreSQL database for persistent storage. If needed, you can modify the database configuration in the application.properties file located in the `src/main/resources directory.`
 
 These steps guide you through setting up, configuring and running the Mail Authentication Application
