@@ -1,6 +1,6 @@
 # Mail Authentication Application
 ### Project Description
-Welcome to the Mail Authentication Application! This application provides a simple yet secure mechanism for user authentication using email verification and one-time passwords (OTPs).
+Welcome to the Mail Authentication Application!. This application provides a simple yet secure mechanism for user authentication using email verification and one-time passwords (OTPs).
 ### Features
 - **User Signup:** Create a new user account with a username, email, and password.
 - **Email Verification:** Users receive a one-time password (OTP) for account verification.
@@ -30,7 +30,7 @@ spring.mail.password=your-email-password
 
 Build and run the Spring Boot application. This command compiles the source code, resolves dependencies and start the server.
 
-**API Endpoints**
+**Step 4: API Endpoints**
 
 **1. Create a New User Account (Signup)**
 
@@ -96,9 +96,12 @@ Authenticate a user by providing login credentials.
 Request Body:
 ```bash
 {
-"email": "john@example.com",
+"email": "user@example.com",
 "password": "secure_password"
 }
 ```
+### Step 6: Database
+The Mail Authentication Application utilizes a PostgreSQL database for persistent storage. If needed, you can modify the database configuration in the application.properties file located in the `src/main/resources directory.`
+
 
 
