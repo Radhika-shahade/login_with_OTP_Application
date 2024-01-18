@@ -43,17 +43,14 @@ public class UserService {
         try {
             User user = userRepository.findByEmail(email).
                     orElseThrow(() -> new RuntimeException("User not found with this email: " + email));
-           if (isUserValid(user, otp)) {
+            if (isUserValid(user, otp)) {
                 user.setActive(true);
                 userRepository.save(user);
                 return UserResponse.builder().message("OTP Verified").build();
             }
-
-              return  UserResponse.builder().message("Invalid OTP !").build();
-           
+            return UserResponse.builder().message("Invalid OTP !").build();
         } catch (Exception e) {
             return UserResponse.builder().message("Oops! something went wrong, please try again!").build();
-
         }
     }
 //To check weather  user OTP is valid or not
@@ -72,8 +69,12 @@ public class UserService {
     }
 //To check Validity
     private boolean checkValidity(LocalDateTime otpGeneratedTime) {
-        return Duration.between(otpGeneratedTime, LocalDateTime.now()).getSeconds() < (2 * MINUTE);
-    }
+//        return Duration.between(otpGeneratedTime, LocalDateTime.now()).getSeconds() < (2 * MINUTE);
+            long minutesDifference = Duration.between(otpGeneratedTime, LocalDateTime.now()).toMinutes();
+            return minutesDifference < 2 ;
+        }
+
+
 //    To regenerate OTP
     public UserResponse generateOTP(String email) {
         try {
